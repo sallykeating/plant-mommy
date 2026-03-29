@@ -187,7 +187,6 @@ const PLANTS = [
   },
 ];
 
-const CARE_TYPES = ['watering', 'fertilizing', 'misting', 'pruning', 'rotating', 'cleaning'] as const;
 
 const HEALTH_ISSUES_TEMPLATES = [
   { issue_type: 'pest', severity: 'medium', description: 'Found small white flies around soil surface when watering.', treatment: 'Applied neem oil spray, let soil dry out. Set yellow sticky traps.', resolved: true, duration: 21 },

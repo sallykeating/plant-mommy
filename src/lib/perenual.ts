@@ -43,6 +43,7 @@ export interface PerenualSpeciesDetail {
   flowers: boolean;
   flowering_season: string | null;
   indoor: boolean;
+  tropical: boolean;
   drought_tolerant: boolean;
   poisonous_to_humans: boolean;
   poisonous_to_pets: boolean;

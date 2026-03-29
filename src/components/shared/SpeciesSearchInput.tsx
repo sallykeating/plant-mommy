@@ -21,7 +21,7 @@ export function SpeciesSearchInput({
   const { search, results, loading, clearResults } = useSpeciesSearch();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   function handleInputChange(val: string) {
     onChange(val);

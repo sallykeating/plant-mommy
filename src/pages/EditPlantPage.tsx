@@ -87,7 +87,7 @@ export default function EditPlantPage() {
     const sunMap: Record<string, SunlightLevel> = {
       'full sun': 'full_sun',
       'sun-part shade': 'bright_indirect',
-      'part shade': 'partial_shade',
+      'part shade': 'partial_sun',
       'full shade': 'low_light',
     };
 

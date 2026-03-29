@@ -12,7 +12,7 @@ export function useSpeciesSearch() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PerenualSpeciesListItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const search = useCallback((q: string) => {
     setQuery(q);
