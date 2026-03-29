@@ -2,7 +2,7 @@ import { Loader2, Sparkles } from 'lucide-react';
 import { useSpeciesDetails } from '@/hooks/useSpeciesSearch';
 
 export function CareTipsPanel({ speciesName }: { speciesName: string | null | undefined }) {
-  const { detail, careTips, loading } = useSpeciesDetails(speciesName);
+  const { detail, careTips, loading, description: fallbackDescription } = useSpeciesDetails(speciesName);
 
   if (!speciesName) return null;
 
@@ -15,14 +15,14 @@ export function CareTipsPanel({ speciesName }: { speciesName: string | null | un
     );
   }
 
-  if (!detail || careTips.length === 0) return null;
+  if (careTips.length === 0) return null;
 
-  const heroImage = detail.image_url
-    ?? detail.images?.habit?.[0]?.image_url
-    ?? detail.images?.flower?.[0]?.image_url
-    ?? detail.images?.leaf?.[0]?.image_url;
+  const heroImage = detail?.image_url
+    ?? detail?.images?.habit?.[0]?.image_url
+    ?? detail?.images?.flower?.[0]?.image_url
+    ?? detail?.images?.leaf?.[0]?.image_url;
 
-  const description = detail.growth?.description ?? detail.observations;
+  const description = detail?.growth?.description ?? detail?.observations ?? fallbackDescription;
 
   return (
     <div className="space-y-3">
@@ -30,7 +30,7 @@ export function CareTipsPanel({ speciesName }: { speciesName: string | null | un
         <div className="overflow-hidden rounded-2xl">
           <img
             src={heroImage}
-            alt={detail.common_name ?? detail.scientific_name}
+            alt={detail?.common_name ?? detail?.scientific_name ?? speciesName}
             className="h-48 w-full object-cover"
           />
         </div>

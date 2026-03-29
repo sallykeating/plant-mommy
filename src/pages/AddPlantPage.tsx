@@ -13,6 +13,7 @@ import {
   type SunlightLevel,
 } from '@/lib/types';
 import { getSpeciesDetails, type TrefleSpeciesListItem } from '@/lib/trefle';
+import { lookupCareProfile } from '@/lib/plant-care-data';
 
 const SUNLIGHT_OPTIONS = Object.entries(SUNLIGHT_LABELS) as [SunlightLevel, string][];
 const HUMIDITY_OPTIONS = Object.entries(HUMIDITY_LABELS) as [HumidityLevel, string][];
@@ -65,38 +66,48 @@ export default function AddPlantPage() {
   }
 
   async function handleSpeciesSelect(item: TrefleSpeciesListItem) {
-    setSpecies(item.common_name ?? item.scientific_name);
+    const displayName = item.common_name ?? item.scientific_name;
+    setSpecies(displayName);
     if (item.image_url && !pendingFile) {
       setApiImageUrl(item.image_url);
     }
 
     const detail = await getSpeciesDetails(item.slug);
-    if (!detail) return;
-
-    const g = detail.growth;
+    const g = detail?.growth;
+    let filled = false;
 
     if (g?.light != null) {
-      const level = lightToSunlightLevel(g.light);
-      setSunlightPreference(level);
-      setCurrentLight(level);
+      setSunlightPreference(lightToSunlightLevel(g.light));
+      setCurrentLight(lightToSunlightLevel(g.light));
+      filled = true;
     }
-
     if (g?.soil_humidity != null) {
-      const days = g.soil_humidity <= 3 ? '14' : g.soil_humidity <= 6 ? '7' : '3';
-      setWateringDays(days);
+      setWateringDays(g.soil_humidity <= 3 ? '14' : g.soil_humidity <= 6 ? '7' : '3');
+      filled = true;
     }
-
     if (g?.atmospheric_humidity != null) {
       setHumidity(humidityToLevel(g.atmospheric_humidity));
+      filled = true;
     }
-
-    const growthRate = detail.specifications?.growth_rate?.toLowerCase();
+    const growthRate = detail?.specifications?.growth_rate?.toLowerCase();
     if (growthRate) {
       const fertMap: Record<string, string> = { slow: '60', moderate: '30', rapid: '14' };
-      if (fertMap[growthRate]) setFertilizingDays(fertMap[growthRate]);
+      if (fertMap[growthRate]) { setFertilizingDays(fertMap[growthRate]); filled = true; }
     }
 
-    setAutoFilled(true);
+    if (!filled) {
+      const profile = lookupCareProfile(displayName) ?? lookupCareProfile(item.scientific_name);
+      if (profile) {
+        setSunlightPreference(profile.light);
+        setCurrentLight(profile.light);
+        setWateringDays(String(profile.wateringDays));
+        setFertilizingDays(String(profile.fertilizingDays));
+        setHumidity(profile.humidity);
+        filled = true;
+      }
+    }
+
+    if (filled) setAutoFilled(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {

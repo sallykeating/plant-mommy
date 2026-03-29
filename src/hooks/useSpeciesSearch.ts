@@ -7,6 +7,8 @@ import {
   type TrefleSpeciesDetail,
   type CareTip,
 } from '@/lib/trefle';
+import { lookupCareProfile } from '@/lib/plant-care-data';
+import { SUNLIGHT_LABELS, HUMIDITY_LABELS } from '@/lib/types';
 
 export function useSpeciesSearch() {
   const [query, setQuery] = useState('');
@@ -43,10 +45,28 @@ export function useSpeciesSearch() {
   return { query, search, results, loading, clearResults: () => setResults([]) };
 }
 
+function careTipsFromProfile(name: string): CareTip[] {
+  const profile = lookupCareProfile(name);
+  if (!profile) return [];
+
+  const tips: CareTip[] = [];
+  tips.push({ category: 'Sunlight', icon: '☀️', value: SUNLIGHT_LABELS[profile.light] });
+  tips.push({ category: 'Watering', icon: '💧', value: `Every ${profile.wateringDays} days` });
+  tips.push({ category: 'Humidity', icon: '💨', value: HUMIDITY_LABELS[profile.humidity] });
+  tips.push({ category: 'Fertilizing', icon: '🌱', value: `Every ${profile.fertilizingDays} days` });
+  if (profile.growthRate) tips.push({ category: 'Growth Rate', icon: '📈', value: profile.growthRate });
+  if (profile.toxicToPets || profile.toxicToHumans) {
+    const targets = [profile.toxicToHumans && 'humans', profile.toxicToPets && 'pets'].filter(Boolean);
+    tips.push({ category: 'Toxicity', icon: '⚠️', value: `Toxic to ${targets.join(' & ')}` });
+  }
+  return tips;
+}
+
 export function useSpeciesDetails(speciesName: string | null | undefined) {
   const [detail, setDetail] = useState<TrefleSpeciesDetail | null>(null);
   const [careTips, setCareTips] = useState<CareTip[]>([]);
   const [loading, setLoading] = useState(false);
+  const [description, setDescription] = useState<string | null>(null);
   const fetchedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -60,6 +80,12 @@ export function useSpeciesDetails(speciesName: string | null | undefined) {
       try {
         const searchResults = await searchSpecies(speciesName);
         if (cancelled || !searchResults.length) {
+          const fallbackTips = careTipsFromProfile(speciesName);
+          if (fallbackTips.length) {
+            setCareTips(fallbackTips);
+            const profile = lookupCareProfile(speciesName);
+            if (profile?.description) setDescription(profile.description);
+          }
           setLoading(false);
           return;
         }
@@ -74,10 +100,23 @@ export function useSpeciesDetails(speciesName: string | null | undefined) {
 
         if (details) {
           setDetail(details);
-          setCareTips(extractCareTips(details));
+          const apiTips = extractCareTips(details);
+          if (apiTips.length > 0) {
+            setCareTips(apiTips);
+          } else {
+            const fallback = careTipsFromProfile(speciesName)
+              || careTipsFromProfile(best.common_name ?? '')
+              || careTipsFromProfile(best.scientific_name);
+            setCareTips(fallback);
+            const profile = lookupCareProfile(speciesName)
+              ?? lookupCareProfile(best.common_name ?? '')
+              ?? lookupCareProfile(best.scientific_name);
+            if (profile?.description) setDescription(profile.description);
+          }
         }
       } catch {
-        // API unavailable or rate limited
+        const fallbackTips = careTipsFromProfile(speciesName);
+        if (fallbackTips.length) setCareTips(fallbackTips);
       }
       setLoading(false);
     })();
@@ -85,5 +124,5 @@ export function useSpeciesDetails(speciesName: string | null | undefined) {
     return () => { cancelled = true; };
   }, [speciesName]);
 
-  return { detail, careTips, loading };
+  return { detail, careTips, loading, description };
 }

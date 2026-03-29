@@ -10,4 +10,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/api/trefle': {
+        target: 'https://trefle.io',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/trefle/, '/api/v1'),
+      },
+    },
+  },
 })

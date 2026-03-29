@@ -1,4 +1,4 @@
-const API_BASE = 'https://trefle.io/api/v1';
+const API_BASE = import.meta.env.DEV ? '/api/trefle' : 'https://trefle.io/api/v1';
 
 function getToken(): string {
   return import.meta.env.VITE_TREFLE_TOKEN ?? '';
@@ -88,19 +88,27 @@ async function cachedFetch<T>(url: string): Promise<T | null> {
       console.warn('Trefle API rate limit reached — pausing requests for 1 minute');
       return null;
     }
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`Trefle API error: ${res.status} ${res.statusText}`);
+      return null;
+    }
 
     const data = await res.json();
     cache.set(url, { data, ts: Date.now() });
     return data as T;
-  } catch {
+  } catch (err) {
+    console.warn('Trefle API fetch failed:', err);
     return null;
   }
 }
 
 export async function searchSpecies(query: string): Promise<TrefleSpeciesListItem[]> {
   const token = getToken();
-  if (!token || !query.trim()) return [];
+  if (!token) {
+    console.warn('Trefle: no token found in VITE_TREFLE_TOKEN');
+    return [];
+  }
+  if (!query.trim()) return [];
 
   const url = `${API_BASE}/plants/search?token=${token}&q=${encodeURIComponent(query.trim())}`;
   const res = await cachedFetch<TrefleSearchResponse>(url);
@@ -112,7 +120,9 @@ export async function getSpeciesDetails(slug: string): Promise<TrefleSpeciesDeta
   if (!token) return null;
 
   const url = `${API_BASE}/species/${encodeURIComponent(slug)}?token=${token}`;
+  console.log('Trefle: fetching species detail for', slug, url);
   const wrapper = await cachedFetch<{ data: TrefleSpeciesDetail }>(url);
+  console.log('Trefle: detail response', wrapper ? 'ok' : 'null', wrapper?.data?.growth);
   return wrapper?.data ?? null;
 }
 
