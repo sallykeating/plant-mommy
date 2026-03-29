@@ -12,7 +12,7 @@ import {
   type HumidityLevel,
   type SunlightLevel,
 } from '@/lib/types';
-import { getSpeciesDetails, type PerenualSpeciesListItem } from '@/lib/perenual';
+import { getSpeciesDetails, type TrefleSpeciesListItem } from '@/lib/trefle';
 
 const SUNLIGHT_OPTIONS = Object.entries(SUNLIGHT_LABELS) as [SunlightLevel, string][];
 const HUMIDITY_OPTIONS = Object.entries(HUMIDITY_LABELS) as [HumidityLevel, string][];
@@ -51,49 +51,49 @@ export default function AddPlantPage() {
   const [humidity, setHumidity] = useState<HumidityLevel | ''>('');
   const [notes, setNotes] = useState('');
 
-  async function handleSpeciesSelect(item: PerenualSpeciesListItem) {
-    setSpecies(item.common_name);
-    if (item.default_image?.regular_url && !pendingFile) {
-      setApiImageUrl(item.default_image.regular_url);
+  function lightToSunlightLevel(light: number): SunlightLevel {
+    if (light <= 2) return 'low_light';
+    if (light <= 4) return 'partial_sun';
+    if (light <= 7) return 'bright_indirect';
+    return 'full_sun';
+  }
+
+  function humidityToLevel(humidity: number): HumidityLevel {
+    if (humidity <= 3) return 'low';
+    if (humidity <= 6) return 'medium';
+    return 'high';
+  }
+
+  async function handleSpeciesSelect(item: TrefleSpeciesListItem) {
+    setSpecies(item.common_name ?? item.scientific_name);
+    if (item.image_url && !pendingFile) {
+      setApiImageUrl(item.image_url);
     }
 
-    const detail = await getSpeciesDetails(item.id);
+    const detail = await getSpeciesDetails(item.slug);
     if (!detail) return;
 
-    const sunMap: Record<string, SunlightLevel> = {
-      'full sun': 'full_sun',
-      'sun-part shade': 'bright_indirect',
-      'part shade': 'partial_sun',
-      'full shade': 'low_light',
-    };
+    const g = detail.growth;
 
-    const sunlightValues = detail.sunlight ?? item.sunlight ?? [];
-    const mapped = sunlightValues.map(s => sunMap[s.toLowerCase()]).filter(Boolean);
-    if (mapped.length) {
-      setSunlightPreference(mapped[0]);
-      setCurrentLight(mapped[0]);
+    if (g?.light != null) {
+      const level = lightToSunlightLevel(g.light);
+      setSunlightPreference(level);
+      setCurrentLight(level);
     }
 
-    if (detail.watering_general_benchmark?.value) {
-      const raw = String(detail.watering_general_benchmark.value);
-      const match = raw.match(/(\d+)/);
-      if (match) setWateringDays(match[1]);
-    } else {
-      const waterMap: Record<string, string> = { frequent: '3', average: '7', minimum: '14', none: '30' };
-      const wtr = detail.watering?.toLowerCase();
-      if (wtr && waterMap[wtr]) setWateringDays(waterMap[wtr]);
+    if (g?.soil_humidity != null) {
+      const days = g.soil_humidity <= 3 ? '14' : g.soil_humidity <= 6 ? '7' : '3';
+      setWateringDays(days);
     }
 
-    const fertMap: Record<string, string> = { high: '14', medium: '30', low: '60' };
-    const maint = detail.maintenance?.toLowerCase();
-    if (maint && fertMap[maint]) setFertilizingDays(fertMap[maint]);
+    if (g?.atmospheric_humidity != null) {
+      setHumidity(humidityToLevel(g.atmospheric_humidity));
+    }
 
-    if (detail.tropical) {
-      setHumidity('high');
-    } else if (detail.drought_tolerant) {
-      setHumidity('low');
-    } else {
-      setHumidity('medium');
+    const growthRate = detail.specifications?.growth_rate?.toLowerCase();
+    if (growthRate) {
+      const fertMap: Record<string, string> = { slow: '60', moderate: '30', rapid: '14' };
+      if (fertMap[growthRate]) setFertilizingDays(fertMap[growthRate]);
     }
 
     setAutoFilled(true);
@@ -167,7 +167,7 @@ export default function AddPlantPage() {
       <h1 className="page-title">New plant</h1>
       <p className="page-subtitle">Add a friend to your jungle.</p>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8 lg:max-w-3xl">
         <section className="card space-y-4">
           <h2 className="section-title">Photo</h2>
           <PhotoUpload

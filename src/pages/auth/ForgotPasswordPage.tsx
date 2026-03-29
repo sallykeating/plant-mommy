@@ -25,8 +25,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-sage font-body text-bark safe-top safe-bottom">
-      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 py-12 pb-16">
+    <div className="min-h-dvh bg-sage font-body text-bark safe-top safe-bottom lg:flex lg:items-center lg:justify-center">
+      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 py-12 pb-16 lg:min-h-0">
         <Link
           to="/login"
           className="btn-ghost -ml-2 mb-8 inline-flex w-fit items-center gap-2 px-2 text-sm text-moss hover:text-forest"

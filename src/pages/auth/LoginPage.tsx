@@ -25,8 +25,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-sage font-body text-bark safe-top safe-bottom">
-      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 py-12 pb-16">
+    <div className="min-h-dvh bg-sage font-body text-bark safe-top safe-bottom lg:flex lg:items-center lg:justify-center">
+      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 py-12 pb-16 lg:min-h-0">
         <header className="mb-10 text-center">
           <div
             className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-forest text-cream shadow-lg shadow-forest/20"

@@ -17,19 +17,26 @@ export function CareTipsPanel({ speciesName }: { speciesName: string | null | un
 
   if (!detail || careTips.length === 0) return null;
 
+  const heroImage = detail.image_url
+    ?? detail.images?.habit?.[0]?.image_url
+    ?? detail.images?.flower?.[0]?.image_url
+    ?? detail.images?.leaf?.[0]?.image_url;
+
+  const description = detail.growth?.description ?? detail.observations;
+
   return (
     <div className="space-y-3">
-      {detail.default_image?.medium_url && (
+      {heroImage && (
         <div className="overflow-hidden rounded-2xl">
           <img
-            src={detail.default_image.medium_url}
-            alt={detail.common_name}
+            src={heroImage}
+            alt={detail.common_name ?? detail.scientific_name}
             className="h-48 w-full object-cover"
           />
         </div>
       )}
 
-      {detail.description && (
+      {description && (
         <div className="card bg-sage/15">
           <div className="flex items-start gap-2.5">
             <Sparkles size={16} className="mt-0.5 shrink-0 text-forest" />
@@ -38,9 +45,9 @@ export function CareTipsPanel({ speciesName }: { speciesName: string | null | un
                 About this species
               </p>
               <p className="text-sm leading-relaxed text-bark-light">
-                {detail.description.length > 300
-                  ? detail.description.slice(0, 300).trim() + '…'
-                  : detail.description}
+                {description.length > 300
+                  ? description.slice(0, 300).trim() + '…'
+                  : description}
               </p>
             </div>
           </div>
@@ -68,7 +75,7 @@ export function CareTipsPanel({ speciesName }: { speciesName: string | null | un
       </div>
 
       <p className="text-center text-[10px] text-sage/70">
-        Care data from Perenual Plant API
+        Care data from Trefle.io
       </p>
     </div>
   );

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ChevronRight, Droplets, Plus, Sparkles, Sun, Thermometer } from 'lucide-react';
+import { ChevronRight, Plus, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useAllReminders } from '@/hooks/useCare';
 import { usePlants } from '@/hooks/usePlants';
@@ -11,76 +11,33 @@ import {
   isOverdue,
 } from '@/lib/helpers';
 import type { CareReminder, Plant } from '@/lib/types';
-import { CARE_TYPE_LABELS, SUNLIGHT_LABELS } from '@/lib/types';
+import { CARE_TYPE_LABELS } from '@/lib/types';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 
 type ReminderRow = CareReminder & { plant_name?: string };
 
-function FeaturedPlantCard({ plant }: { plant: Plant }) {
+function CollageItem({ plant, className }: { plant: Plant; className?: string }) {
   return (
-    <Link to={`/plants/${plant.id}`} className="block">
-      <div className="card overflow-hidden p-0">
-        <div className="relative aspect-[4/3] w-full">
-          {plant.photo_url ? (
-            <img src={plant.photo_url} alt={plant.name} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sage-light to-sage">
-              <span className="text-6xl">🪴</span>
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <h3 className="font-display text-xl font-bold text-white">{plant.name}</h3>
-            <p className="text-sm text-white/80">{plant.species ?? 'Indoor Plant'}</p>
-          </div>
+    <Link
+      to={`/plants/${plant.id}`}
+      className={`group relative block overflow-hidden ${className ?? ''}`}
+    >
+      {plant.photo_url ? (
+        <img
+          src={plant.photo_url}
+          alt={plant.name}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sage-light to-sage-muted">
+          <span className="text-4xl">🌿</span>
         </div>
-        <div className="flex items-center gap-2 px-5 py-3.5">
-          {plant.sunlight_preference && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-sage/20 px-3 py-1 text-xs font-medium text-forest">
-              <Sun size={12} />
-              {SUNLIGHT_LABELS[plant.sunlight_preference]}
-            </span>
-          )}
-          {plant.watering_frequency_days && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-sage/20 px-3 py-1 text-xs font-medium text-forest">
-              <Droplets size={12} />
-              Every {plant.watering_frequency_days}d
-            </span>
-          )}
-          {plant.humidity_preference && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-sage/20 px-3 py-1 text-xs font-medium text-forest">
-              <Thermometer size={12} />
-              {plant.humidity_preference}
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function PlantThumb({ plant }: { plant: Plant }) {
-  return (
-    <Link to={`/plants/${plant.id}`} className="group block">
-      <div className="card overflow-hidden p-0">
-        <div className="aspect-square w-full">
-          {plant.photo_url ? (
-            <img
-              src={plant.photo_url}
-              alt={plant.name}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sage-light to-sage-muted">
-              <span className="text-3xl">🌿</span>
-            </div>
-          )}
-        </div>
-        <div className="px-3 py-2.5">
-          <p className="truncate font-display text-sm font-semibold text-forest">{plant.name}</p>
-          <p className="truncate text-xs text-bark-light">{plant.species ?? 'Plant'}</p>
-        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-80 transition-opacity group-hover:opacity-100" />
+      <div className="absolute bottom-0 left-0 right-0 p-3">
+        <p className="truncate font-display text-sm font-bold text-white drop-shadow-sm">{plant.name}</p>
+        <p className="truncate text-[11px] text-white/75">{plant.species ?? 'Plant'}</p>
       </div>
     </Link>
   );
@@ -200,8 +157,7 @@ export default function DashboardPage() {
 
   const hasScheduledSections = overdue.length > 0 || dueToday.length > 0 || comingUp.length > 0;
 
-  const featured = plants[0];
-  const rest = plants.slice(1);
+  const collage = plants.slice(0, 7);
 
   if (loading) {
     return (
@@ -223,112 +179,145 @@ export default function DashboardPage() {
         </p>
       </header>
 
-      {plants.length > 0 && (
-        <section className="mb-8">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="section-title mb-0">My Jungle</h2>
-            <Link
-              to="/plants"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-forest hover:underline"
-            >
-              See all
-              <ChevronRight size={14} />
-            </Link>
-          </div>
-
-          {featured && <FeaturedPlantCard plant={featured} />}
-
-          {rest.length > 0 && (
-            <div className="mt-3 grid grid-cols-3 gap-2.5">
-              {rest.slice(0, 6).map((p) => (
-                <PlantThumb key={p.id} plant={p} />
-              ))}
-            </div>
-          )}
-
-          {rest.length > 6 && (
-            <Link
-              to="/plants"
-              className="mt-3 block text-center text-xs font-semibold text-forest hover:underline"
-            >
-              +{rest.length - 6} more plants
-            </Link>
-          )}
-        </section>
-      )}
-
-      {plants.length === 0 && (
-        <section className="mb-8">
-          <div className="card text-center py-10">
-            <span className="text-5xl mb-4 block">🌱</span>
-            <p className="font-display text-lg font-semibold text-forest mb-2">Start your jungle</p>
-            <p className="text-sm text-bark-light mb-5">Add your first plant to get started.</p>
-            <Link
-              to="/plants/new"
-              className="btn-primary inline-flex items-center gap-2"
-            >
-              <Plus size={18} strokeWidth={2.5} />
-              Add a plant
-            </Link>
-          </div>
-        </section>
-      )}
-
-      {reminders.length === 0 ? (
-        <EmptyState
-          icon="🌿"
-          title="No care reminders yet"
-          description="Add plants and set watering or care schedules to see tasks here."
-        />
-      ) : (
-        <>
-          {!hasScheduledSections && (
-            <div className="card mb-6">
-              <div className="flex gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-forest text-cream">
-                  <Sparkles size={18} strokeWidth={2} />
-                </div>
-                <div>
-                  <p className="font-display font-semibold text-forest">
-                    All caught up!
-                  </p>
-                  <p className="mt-1 text-sm text-bark-light">
-                    Nothing due in the next seven days.
-                  </p>
-                  <Link
-                    to="/calendar"
-                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-forest hover:underline"
-                  >
-                    Open calendar
-                    <ChevronRight size={14} />
-                  </Link>
-                </div>
+      <div className="lg:grid lg:grid-cols-[1fr_20rem] lg:gap-8">
+        {/* Left column: jungle + empty states */}
+        <div>
+          {plants.length > 0 && (
+            <section className="mb-8">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="section-title mb-0">My Jungle</h2>
+                <Link
+                  to="/plants"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-forest hover:underline"
+                >
+                  See all
+                  <ChevronRight size={14} />
+                </Link>
               </div>
-            </div>
+
+              <div className="overflow-hidden rounded-2xl">
+                {collage.length === 1 && (
+                  <CollageItem plant={collage[0]} className="aspect-[4/3]" />
+                )}
+                {collage.length === 2 && (
+                  <div className="grid grid-cols-2 gap-px">
+                    <CollageItem plant={collage[0]} className="aspect-[3/4]" />
+                    <CollageItem plant={collage[1]} className="aspect-[3/4]" />
+                  </div>
+                )}
+                {collage.length === 3 && (
+                  <div className="grid grid-cols-2 gap-px">
+                    <CollageItem plant={collage[0]} className="row-span-2 aspect-auto h-full" />
+                    <CollageItem plant={collage[1]} className="aspect-square" />
+                    <CollageItem plant={collage[2]} className="aspect-square" />
+                  </div>
+                )}
+                {collage.length === 4 && (
+                  <div className="grid grid-cols-2 gap-px">
+                    {collage.map(p => (
+                      <CollageItem key={p.id} plant={p} className="aspect-square" />
+                    ))}
+                  </div>
+                )}
+                {collage.length >= 5 && (
+                  <div className="grid grid-cols-3 gap-px" style={{ gridTemplateRows: '1.4fr 1fr' }}>
+                    <CollageItem plant={collage[0]} className="col-span-2" />
+                    <CollageItem plant={collage[1]} className="col-span-1" />
+                    {collage.slice(2, 5).map(p => (
+                      <CollageItem key={p.id} plant={p} className="col-span-1" />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {plants.length > 7 && (
+                <Link
+                  to="/plants"
+                  className="mt-3 block text-center text-xs font-semibold text-forest hover:underline"
+                >
+                  +{plants.length - 7} more plants
+                </Link>
+              )}
+            </section>
           )}
 
-          <ReminderSection
-            title="Needs Attention"
-            reminders={overdue}
-            tone="urgent"
-            badgeClass="badge-red"
-          />
+          {plants.length === 0 && (
+            <section className="mb-8">
+              <div className="card text-center py-10">
+                <span className="text-5xl mb-4 block">🌱</span>
+                <p className="font-display text-lg font-semibold text-forest mb-2">Start your jungle</p>
+                <p className="text-sm text-bark-light mb-5">Add your first plant to get started.</p>
+                <Link
+                  to="/plants/new"
+                  className="btn-primary inline-flex items-center gap-2"
+                >
+                  <Plus size={18} strokeWidth={2.5} />
+                  Add a plant
+                </Link>
+              </div>
+            </section>
+          )}
+        </div>
 
-          <ReminderSection
-            title="Due Today"
-            reminders={dueToday}
-            tone="today"
-            badgeClass="badge-yellow"
-          />
+        {/* Right column (on desktop): reminders */}
+        <div>
+          {reminders.length === 0 ? (
+            <EmptyState
+              icon="🌿"
+              title="No care reminders yet"
+              description="Add plants and set watering or care schedules to see tasks here."
+            />
+          ) : (
+            <>
+              {!hasScheduledSections && (
+                <div className="card mb-6">
+                  <div className="flex gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-forest text-cream">
+                      <Sparkles size={18} strokeWidth={2} />
+                    </div>
+                    <div>
+                      <p className="font-display font-semibold text-forest">
+                        All caught up!
+                      </p>
+                      <p className="mt-1 text-sm text-bark-light">
+                        Nothing due in the next seven days.
+                      </p>
+                      <Link
+                        to="/calendar"
+                        className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-forest hover:underline"
+                      >
+                        Open calendar
+                        <ChevronRight size={14} />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          <ReminderSection
-            title="Coming Up"
-            reminders={comingUp}
-            tone="soon"
-            badgeClass="badge-sage"
-          />
-        </>
-      )}
+              <ReminderSection
+                title="Needs Attention"
+                reminders={overdue}
+                tone="urgent"
+                badgeClass="badge-red"
+              />
+
+              <ReminderSection
+                title="Due Today"
+                reminders={dueToday}
+                tone="today"
+                badgeClass="badge-yellow"
+              />
+
+              <ReminderSection
+                title="Coming Up"
+                reminders={comingUp}
+                tone="soon"
+                badgeClass="badge-sage"
+              />
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

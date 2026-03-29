@@ -3,14 +3,14 @@ import {
   searchSpecies,
   getSpeciesDetails,
   extractCareTips,
-  type PerenualSpeciesListItem,
-  type PerenualSpeciesDetail,
+  type TrefleSpeciesListItem,
+  type TrefleSpeciesDetail,
   type CareTip,
-} from '@/lib/perenual';
+} from '@/lib/trefle';
 
 export function useSpeciesSearch() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<PerenualSpeciesListItem[]>([]);
+  const [results, setResults] = useState<TrefleSpeciesListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -44,7 +44,7 @@ export function useSpeciesSearch() {
 }
 
 export function useSpeciesDetails(speciesName: string | null | undefined) {
-  const [detail, setDetail] = useState<PerenualSpeciesDetail | null>(null);
+  const [detail, setDetail] = useState<TrefleSpeciesDetail | null>(null);
   const [careTips, setCareTips] = useState<CareTip[]>([]);
   const [loading, setLoading] = useState(false);
   const fetchedRef = useRef<string | null>(null);
@@ -65,11 +65,11 @@ export function useSpeciesDetails(speciesName: string | null | undefined) {
         }
 
         const best = searchResults.find(
-          r => r.scientific_name.some(s => s.toLowerCase() === speciesName.toLowerCase())
-            || r.common_name.toLowerCase() === speciesName.toLowerCase()
+          r => r.scientific_name.toLowerCase() === speciesName.toLowerCase()
+            || (r.common_name?.toLowerCase() === speciesName.toLowerCase())
         ) ?? searchResults[0];
 
-        const details = await getSpeciesDetails(best.id);
+        const details = await getSpeciesDetails(best.slug);
         if (cancelled) return;
 
         if (details) {

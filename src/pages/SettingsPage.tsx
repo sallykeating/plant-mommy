@@ -84,7 +84,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="page-container font-body pb-32">
+    <div className="page-container font-body pb-32 lg:max-w-2xl">
       <header className="mb-6">
         <h1 className="page-title">Settings</h1>
         <p className="page-subtitle">

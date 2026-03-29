@@ -87,139 +87,145 @@ export default function PlantDetailPage() {
         Back
       </button>
 
-      <section className="relative -mx-1 mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
-        <div className="aspect-[4/3] w-full sm:aspect-[16/9]">
-          {plant.photo_url ? (
-            <img src={plant.photo_url} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div
-              className="flex h-full w-full items-center justify-center bg-gradient-to-br from-forest/20 via-sage-muted to-terracotta-light/40"
-              aria-hidden
-            >
-              <span className="text-7xl">🪴</span>
+      <div className="lg:grid lg:grid-cols-[1fr_22rem] lg:gap-8">
+        {/* Left column */}
+        <div>
+          <section className="relative -mx-1 mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+            <div className="aspect-[4/3] w-full sm:aspect-[16/9]">
+              {plant.photo_url ? (
+                <img src={plant.photo_url} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div
+                  className="flex h-full w-full items-center justify-center bg-gradient-to-br from-forest/20 via-sage-muted to-terracotta-light/40"
+                  aria-hidden
+                >
+                  <span className="text-7xl">🪴</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="font-display text-2xl font-semibold text-forest">{plant.name}</h1>
-              <p className="text-bark-light mt-1">
-                {[plant.species, plant.cultivar].filter(Boolean).join(' · ') || 'No species set'}
-              </p>
+            <div className="p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h1 className="font-display text-2xl font-semibold text-forest">{plant.name}</h1>
+                  <p className="text-bark-light mt-1">
+                    {[plant.species, plant.cultivar].filter(Boolean).join(' · ') || 'No species set'}
+                  </p>
+                </div>
+                <span
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${healthStatusColor(plant.health_status)}`}
+                >
+                  {HEALTH_STATUS_LABELS[plant.health_status]}
+                </span>
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <Link
+                  to={`/plants/${pid}/care?focus=water`}
+                  className="card flex flex-col items-center gap-1 py-4 text-center transition-shadow hover:shadow-md"
+                >
+                  <Droplets className="text-forest" size={22} />
+                  <span className="text-xs font-semibold text-forest">Water</span>
+                </Link>
+                <Link
+                  to={`/plants/${pid}/care`}
+                  className="card flex flex-col items-center gap-1 py-4 text-center transition-shadow hover:shadow-md"
+                >
+                  <ClipboardList className="text-forest" size={22} />
+                  <span className="text-xs font-semibold text-forest">Care Log</span>
+                </Link>
+                <Link
+                  to={`/plants/${pid}/growth`}
+                  className="card flex flex-col items-center gap-1 py-4 text-center transition-shadow hover:shadow-md"
+                >
+                  <Ruler className="text-forest" size={22} />
+                  <span className="text-xs font-semibold text-forest">Growth</span>
+                </Link>
+                <Link
+                  to={`/plants/${pid}/health`}
+                  className="card flex flex-col items-center gap-1 py-4 text-center transition-shadow hover:shadow-md"
+                >
+                  <HeartPulse className="text-forest" size={22} />
+                  <span className="text-xs font-semibold text-forest">Health</span>
+                </Link>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link to={`/plants/${pid}/edit`} className="btn-secondary inline-flex flex-1 min-w-[8rem] items-center justify-center gap-2 py-2.5 text-sm">
+                  <Pencil size={16} />
+                  Edit
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setDeleteOpen(true)}
+                  className="btn-danger inline-flex flex-1 min-w-[8rem] items-center justify-center gap-2 py-2.5 text-sm"
+                >
+                  <Trash2 size={16} />
+                  Delete
+                </button>
+              </div>
             </div>
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${healthStatusColor(plant.health_status)}`}
-            >
-              {HEALTH_STATUS_LABELS[plant.health_status]}
-            </span>
-          </div>
+          </section>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Link
-              to={`/plants/${pid}/care?focus=water`}
-              className="card flex flex-col items-center gap-1 py-4 text-center transition-shadow hover:shadow-md"
-            >
-              <Droplets className="text-forest" size={22} />
-              <span className="text-xs font-semibold text-forest">Water</span>
-            </Link>
-            <Link
-              to={`/plants/${pid}/care`}
-              className="card flex flex-col items-center gap-1 py-4 text-center transition-shadow hover:shadow-md"
-            >
-              <ClipboardList className="text-forest" size={22} />
-              <span className="text-xs font-semibold text-forest">Care Log</span>
-            </Link>
-            <Link
-              to={`/plants/${pid}/growth`}
-              className="card flex flex-col items-center gap-1 py-4 text-center transition-shadow hover:shadow-md"
-            >
-              <Ruler className="text-forest" size={22} />
-              <span className="text-xs font-semibold text-forest">Growth</span>
-            </Link>
-            <Link
-              to={`/plants/${pid}/health`}
-              className="card flex flex-col items-center gap-1 py-4 text-center transition-shadow hover:shadow-md"
-            >
-              <HeartPulse className="text-forest" size={22} />
-              <span className="text-xs font-semibold text-forest">Health</span>
-            </Link>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link to={`/plants/${pid}/edit`} className="btn-secondary inline-flex flex-1 min-w-[8rem] items-center justify-center gap-2 py-2.5 text-sm">
-              <Pencil size={16} />
-              Edit
-            </Link>
-            <button
-              type="button"
-              onClick={() => setDeleteOpen(true)}
-              className="btn-danger inline-flex flex-1 min-w-[8rem] items-center justify-center gap-2 py-2.5 text-sm"
-            >
-              <Trash2 size={16} />
-              Delete
-            </button>
-          </div>
+          <h2 className="section-title">Care tips</h2>
+          <CareTipsPanel speciesName={plant.species} />
         </div>
-      </section>
 
-      <h2 className="section-title">Plant details</h2>
-      <div className="card mb-4 space-y-3 text-sm">
-        <DetailRow label="Location" value={plant.location} />
-        <div className="divider my-3" />
-        <DetailRow
-          label="Sunlight preference"
-          value={plant.sunlight_preference ? SUNLIGHT_LABELS[plant.sunlight_preference] : null}
-        />
-        <DetailRow
-          label="Current light"
-          value={plant.current_light_exposure ? SUNLIGHT_LABELS[plant.current_light_exposure] : null}
-        />
-        <div className="divider my-3" />
-        <DetailRow
-          label="Watering schedule"
-          value={
-            plant.watering_frequency_days != null
-              ? `Every ${plant.watering_frequency_days} day${plant.watering_frequency_days === 1 ? '' : 's'}`
-              : null
-          }
-        />
-        <DetailRow
-          label="Fertilizing schedule"
-          value={
-            plant.fertilizing_frequency_days != null
-              ? `Every ${plant.fertilizing_frequency_days} day${plant.fertilizing_frequency_days === 1 ? '' : 's'}`
-              : null
-          }
-        />
-        <DetailRow
-          label="Humidity"
-          value={plant.humidity_preference ? HUMIDITY_LABELS[plant.humidity_preference] : null}
-        />
-        <div className="divider my-3" />
-        <DetailRow label="Pot size" value={plant.pot_size} />
-        <DetailRow label="Pot type" value={plant.pot_type} />
-        <DetailRow
-          label="Last repotted"
-          value={plant.last_repotted ? formatDate(plant.last_repotted) : null}
-        />
-        <DetailRow
-          label="Acquired"
-          value={plant.acquisition_date ? formatDate(plant.acquisition_date) : null}
-        />
-        {plant.notes && (
-          <>
+        {/* Right column */}
+        <div>
+          <h2 className="section-title">Plant details</h2>
+          <div className="card mb-4 space-y-3 text-sm">
+            <DetailRow label="Location" value={plant.location} />
             <div className="divider my-3" />
-            <p className="label">Notes</p>
-            <p className="text-bark-light whitespace-pre-wrap leading-relaxed">{plant.notes}</p>
-          </>
-        )}
-      </div>
+            <DetailRow
+              label="Sunlight preference"
+              value={plant.sunlight_preference ? SUNLIGHT_LABELS[plant.sunlight_preference] : null}
+            />
+            <DetailRow
+              label="Current light"
+              value={plant.current_light_exposure ? SUNLIGHT_LABELS[plant.current_light_exposure] : null}
+            />
+            <div className="divider my-3" />
+            <DetailRow
+              label="Watering schedule"
+              value={
+                plant.watering_frequency_days != null
+                  ? `Every ${plant.watering_frequency_days} day${plant.watering_frequency_days === 1 ? '' : 's'}`
+                  : null
+              }
+            />
+            <DetailRow
+              label="Fertilizing schedule"
+              value={
+                plant.fertilizing_frequency_days != null
+                  ? `Every ${plant.fertilizing_frequency_days} day${plant.fertilizing_frequency_days === 1 ? '' : 's'}`
+                  : null
+              }
+            />
+            <DetailRow
+              label="Humidity"
+              value={plant.humidity_preference ? HUMIDITY_LABELS[plant.humidity_preference] : null}
+            />
+            <div className="divider my-3" />
+            <DetailRow label="Pot size" value={plant.pot_size} />
+            <DetailRow label="Pot type" value={plant.pot_type} />
+            <DetailRow
+              label="Last repotted"
+              value={plant.last_repotted ? formatDate(plant.last_repotted) : null}
+            />
+            <DetailRow
+              label="Acquired"
+              value={plant.acquisition_date ? formatDate(plant.acquisition_date) : null}
+            />
+            {plant.notes && (
+              <>
+                <div className="divider my-3" />
+                <p className="label">Notes</p>
+                <p className="text-bark-light whitespace-pre-wrap leading-relaxed">{plant.notes}</p>
+              </>
+            )}
+          </div>
 
-      <h2 className="section-title">Care tips</h2>
-      <CareTipsPanel speciesName={plant.species} />
-
-      <h2 className="section-title mt-6">Upcoming reminders</h2>
+          <h2 className="section-title mt-6">Upcoming reminders</h2>
       <div className="card">
         {remindersLoading ? (
           <LoadingSpinner size="sm" />
@@ -262,6 +268,8 @@ export default function PlantDetailPage() {
             })}
           </ul>
         )}
+      </div>
+        </div>
       </div>
 
       {deleteOpen && (

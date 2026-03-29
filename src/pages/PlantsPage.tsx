@@ -102,7 +102,7 @@ export default function PlantsPage() {
           )}
         </div>
       ) : (
-        <ul className="flex flex-col gap-3 pb-4">
+        <ul className="flex flex-col gap-3 pb-4 lg:grid lg:grid-cols-2 xl:grid-cols-3">
           {filtered.map((plant) => (
             <li key={plant.id}>
               <PlantCard plant={plant} onNavigate={(id) => navigate(`/plants/${id}`)} />
@@ -113,7 +113,7 @@ export default function PlantsPage() {
 
       <Link
         to="/plants/new"
-        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-forest text-cream shadow-lg shadow-forest/30 transition-transform hover:bg-forest-light active:scale-95 md:bottom-8 md:right-[max(1.25rem,calc(50%-16rem))]"
+        className="fixed bottom-24 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-forest text-cream shadow-lg shadow-forest/30 transition-transform hover:bg-forest-light active:scale-95 lg:bottom-8 lg:right-8"
         aria-label="Add plant"
       >
         <Plus size={28} strokeWidth={2.25} />

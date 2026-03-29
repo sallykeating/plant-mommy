@@ -143,88 +143,92 @@ export default function CalendarPage() {
         </p>
       </header>
 
-      <div className="card mb-5">
-        <div className="flex items-center justify-between gap-2 mb-4">
-          <button
-            type="button"
-            onClick={goPrevMonth}
-            className="btn-ghost p-2 rounded-xl shrink-0"
-            aria-label="Previous month"
-          >
-            <ChevronLeft className="w-6 h-6 text-forest" />
-          </button>
-          <h2 className="font-display text-lg font-semibold text-bark text-center flex-1">
-            {monthLabel}
-          </h2>
-          <button
-            type="button"
-            onClick={goNextMonth}
-            className="btn-ghost p-2 rounded-xl shrink-0"
-            aria-label="Next month"
-          >
-            <ChevronRight className="w-6 h-6 text-forest" />
-          </button>
-        </div>
+      <div className="lg:grid lg:grid-cols-[1fr_22rem] lg:gap-8 lg:items-start">
+        {/* Calendar grid */}
+        <div className="card mb-5 lg:mb-0">
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <button
+              type="button"
+              onClick={goPrevMonth}
+              className="btn-ghost p-2 rounded-xl shrink-0"
+              aria-label="Previous month"
+            >
+              <ChevronLeft className="w-6 h-6 text-forest" />
+            </button>
+            <h2 className="font-display text-lg font-semibold text-bark text-center flex-1">
+              {monthLabel}
+            </h2>
+            <button
+              type="button"
+              onClick={goNextMonth}
+              className="btn-ghost p-2 rounded-xl shrink-0"
+              aria-label="Next month"
+            >
+              <ChevronRight className="w-6 h-6 text-forest" />
+            </button>
+          </div>
 
-        <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-semibold text-sage uppercase tracking-wide mb-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <div key={d} className="text-center py-1">
-              {d}
-            </div>
-          ))}
-        </div>
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-semibold text-sage uppercase tracking-wide mb-2">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+              <div key={d} className="text-center py-1">
+                {d}
+              </div>
+            ))}
+          </div>
 
-        <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
-          {cells.map((day, idx) => {
-            if (day === null) {
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
+            {cells.map((day, idx) => {
+              if (day === null) {
+                return (
+                  <div
+                    key={`empty-${idx}`}
+                    className="min-h-[2.75rem] sm:min-h-14 rounded-xl bg-parchment/40"
+                  />
+                );
+              }
+              const dayIso = toISODateLocal(viewYear, viewMonth, day);
+              const dayList = remindersByDate.get(dayIso) ?? [];
+              const isSelected = selectedDate === dayIso;
+              const dotClass = dayIndicatorClass(dayIso);
+
               return (
-                <div
-                  key={`empty-${idx}`}
-                  className="min-h-[2.75rem] sm:min-h-14 rounded-xl bg-parchment/40"
-                />
+                <button
+                  key={dayIso}
+                  type="button"
+                  onClick={() => setSelectedDate(dayIso)}
+                  className={`
+                    min-h-[2.75rem] sm:min-h-14 rounded-xl flex flex-col items-center justify-center gap-0.5
+                    text-sm font-semibold transition-all active:scale-[0.97]
+                    ${isSelected
+                      ? 'bg-forest/15 ring-2 ring-forest text-forest-dark'
+                      : 'bg-parchment/60 text-bark hover:bg-sage-muted/50'}
+                  `}
+                >
+                  <span>{day}</span>
+                  {dayList.length > 0 && (
+                    <div className="flex items-center justify-center gap-0.5 flex-wrap max-w-full px-0.5">
+                      {dayList.slice(0, 3).map((r) => (
+                        <span
+                          key={r.id}
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`}
+                          title={`${r.plant_name ?? 'Plant'} — ${CARE_TYPE_LABELS[r.care_type]}`}
+                        />
+                      ))}
+                      {dayList.length > 3 && (
+                        <span className="text-[9px] text-sage leading-none">
+                          +{dayList.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </button>
               );
-            }
-            const dayIso = toISODateLocal(viewYear, viewMonth, day);
-            const dayList = remindersByDate.get(dayIso) ?? [];
-            const isSelected = selectedDate === dayIso;
-            const dotClass = dayIndicatorClass(dayIso);
-
-            return (
-              <button
-                key={dayIso}
-                type="button"
-                onClick={() => setSelectedDate(dayIso)}
-                className={`
-                  min-h-[2.75rem] sm:min-h-14 rounded-xl flex flex-col items-center justify-center gap-0.5
-                  text-sm font-semibold transition-all active:scale-[0.97]
-                  ${isSelected
-                    ? 'bg-forest/15 ring-2 ring-forest text-forest-dark'
-                    : 'bg-parchment/60 text-bark hover:bg-sage-muted/50'}
-                `}
-              >
-                <span>{day}</span>
-                {dayList.length > 0 && (
-                  <div className="flex items-center justify-center gap-0.5 flex-wrap max-w-full px-0.5">
-                    {dayList.slice(0, 3).map((r) => (
-                      <span
-                        key={r.id}
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`}
-                        title={`${r.plant_name ?? 'Plant'} — ${CARE_TYPE_LABELS[r.care_type]}`}
-                      />
-                    ))}
-                    {dayList.length > 3 && (
-                      <span className="text-[9px] text-sage leading-none">
-                        +{dayList.length - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </button>
-            );
-          })}
+            })}
+          </div>
         </div>
-      </div>
 
+        {/* Sidebar: selected day + week */}
+        <div>
       <section className="mb-6">
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3 className="section-title mb-0">
@@ -329,6 +333,8 @@ export default function CalendarPage() {
       >
         Refresh reminders
       </button>
+        </div>
+      </div>
     </div>
   );
 }

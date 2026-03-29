@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
 import { Loader2, Search } from 'lucide-react';
 import { useSpeciesSearch } from '@/hooks/useSpeciesSearch';
-import type { PerenualSpeciesListItem } from '@/lib/perenual';
+import type { TrefleSpeciesListItem } from '@/lib/trefle';
 
 interface Props {
   value: string;
   onChange: (value: string) => void;
-  onSpeciesSelect?: (species: PerenualSpeciesListItem) => void;
+  onSpeciesSelect?: (species: TrefleSpeciesListItem) => void;
   id?: string;
   placeholder?: string;
 }
@@ -29,8 +29,8 @@ export function SpeciesSearchInput({
     setOpen(true);
   }
 
-  function handleSelect(item: PerenualSpeciesListItem) {
-    onChange(item.common_name);
+  function handleSelect(item: TrefleSpeciesListItem) {
+    onChange(item.common_name ?? item.scientific_name);
     onSpeciesSelect?.(item);
     clearResults();
     setOpen(false);
@@ -99,9 +99,9 @@ export function SpeciesSearchInput({
                   aria-selected={false}
                 >
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-sage-muted/30">
-                    {item.default_image?.thumbnail ? (
+                    {item.image_url ? (
                       <img
-                        src={item.default_image.thumbnail}
+                        src={item.image_url}
                         alt=""
                         className="h-full w-full object-cover"
                         loading="lazy"
@@ -114,23 +114,16 @@ export function SpeciesSearchInput({
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-forest">
-                      {item.common_name}
+                      {item.common_name ?? item.scientific_name}
                     </p>
                     <p className="truncate text-xs text-sage">
-                      {item.scientific_name?.[0]}
+                      {item.scientific_name}
                     </p>
-                    <div className="mt-0.5 flex flex-wrap gap-1.5">
-                      {item.watering && (
-                        <span className="text-[10px] text-bark-light">
-                          💧 {item.watering}
-                        </span>
-                      )}
-                      {item.sunlight?.[0] && (
-                        <span className="text-[10px] text-bark-light">
-                          ☀️ {item.sunlight[0]}
-                        </span>
-                      )}
-                    </div>
+                    {item.family && (
+                      <p className="mt-0.5 text-[10px] text-bark-light">
+                        🌿 {item.family_common_name ?? item.family}
+                      </p>
+                    )}
                   </div>
                 </button>
               </li>

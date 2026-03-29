@@ -151,6 +151,12 @@
   max-width: 32rem;
   margin-left: auto;
   margin-right: auto;
+
+  @media (min-width: 1024px) {
+    max-width: 56rem;
+    padding-bottom: 3rem;
+    padding-top: 2rem;
+  }
 }
 
 @utility page-title {
