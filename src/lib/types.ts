@@ -12,6 +12,7 @@ export interface Plant {
   name: string;
   species: string | null;
   cultivar: string | null;
+  emoji: string | null;
   photo_url: string | null;
   acquisition_date: string | null;
   location: string | null;

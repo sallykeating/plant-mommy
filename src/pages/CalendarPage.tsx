@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Leaf } from 'lucide-react';
-import { useAllReminders } from '@/hooks/useCare';
+import { useAllReminders, useAllCareEvents } from '@/hooks/useCare';
 import { careTypeIcon, isOverdue, todayISO } from '@/lib/helpers';
 import { CARE_TYPE_LABELS } from '@/lib/types';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import type { CareReminder } from '@/lib/types';
+import type { CareReminder, CareEvent } from '@/lib/types';
 
 function toDateOnly(iso: string): string {
   return iso.slice(0, 10);
@@ -43,7 +43,7 @@ function dayIndicatorClass(dayIso: string): string {
   return 'bg-sage';
 }
 
-type ReminderRow = CareReminder & { plant_name?: string };
+type ReminderRow = CareReminder & { plant_name?: string; plant_emoji?: string };
 
 export default function CalendarPage() {
   const now = new Date();
@@ -52,6 +52,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string>(() => todayISO());
 
   const { reminders, loading, refetch } = useAllReminders();
+  const { events: wateringEvents, loading: eventsLoading, refetch: refetchEvents } = useAllCareEvents();
 
   const remindersByDate = useMemo(() => {
     const map = new Map<string, ReminderRow[]>();
@@ -60,6 +61,32 @@ export default function CalendarPage() {
       const list = map.get(key) ?? [];
       list.push(r);
       map.set(key, list);
+    }
+    return map;
+  }, [reminders]);
+
+  type EventRow = CareEvent & { plant_name?: string; plant_emoji?: string };
+
+  const wateredByDate = useMemo(() => {
+    const map = new Map<string, EventRow[]>();
+    for (const e of wateringEvents) {
+      const key = toDateOnly(e.performed_at);
+      const list = map.get(key) ?? [];
+      list.push(e);
+      map.set(key, list);
+    }
+    return map;
+  }, [wateringEvents]);
+
+  const waterRemindersByDate = useMemo(() => {
+    const map = new Map<string, ReminderRow[]>();
+    for (const r of reminders) {
+      if (r.care_type === 'watering') {
+        const key = toDateOnly(r.next_due);
+        const list = map.get(key) ?? [];
+        list.push(r);
+        map.set(key, list);
+      }
     }
     return map;
   }, [reminders]);
@@ -100,6 +127,8 @@ export default function CalendarPage() {
     return a.care_type.localeCompare(b.care_type);
   });
 
+  const selectedWateredEvents = wateredByDate.get(selectedDate) ?? [];
+
   const weekStart = useMemo(() => {
     const [y, m, d] = selectedDate.split('-').map(Number);
     const sel = new Date(y!, m! - 1, d!);
@@ -125,7 +154,7 @@ export default function CalendarPage() {
     return out;
   }, [weekStart, remindersByDate]);
 
-  if (loading) {
+  if (loading || eventsLoading) {
     return (
       <div className="page-container">
         <LoadingSpinner size="lg" />
@@ -138,8 +167,7 @@ export default function CalendarPage() {
       <header className="mb-4">
         <h1 className="page-title">Care calendar</h1>
         <p className="page-subtitle">
-          Tap a day to see tasks. Dots: overdue (red), today (green), upcoming
-          (sage).
+          Tap a day to see tasks. Plant emojis show watering activity.
         </p>
       </header>
 
@@ -190,6 +218,13 @@ export default function CalendarPage() {
               const dayList = remindersByDate.get(dayIso) ?? [];
               const isSelected = selectedDate === dayIso;
               const dotClass = dayIndicatorClass(dayIso);
+              const dayWateredEvents = wateredByDate.get(dayIso) ?? [];
+              const dayWaterReminders = waterRemindersByDate.get(dayIso) ?? [];
+
+              const wateredEmojis = [...new Set(dayWateredEvents.map(e => e.plant_emoji ?? '🌿'))];
+              const dueEmojis = [...new Set(dayWaterReminders.map(r => r.plant_emoji ?? '🌿'))]
+                .filter(em => !wateredEmojis.includes(em));
+              const allEmojis = [...wateredEmojis.map(em => ({ em, type: 'done' as const })), ...dueEmojis.map(em => ({ em, type: 'due' as const }))];
 
               return (
                 <button
@@ -205,20 +240,27 @@ export default function CalendarPage() {
                   `}
                 >
                   <span>{day}</span>
-                  {dayList.length > 0 && (
-                    <div className="flex items-center justify-center gap-0.5 flex-wrap max-w-full px-0.5">
-                      {dayList.slice(0, 3).map((r) => (
+                  {(allEmojis.length > 0 || dayList.some(r => r.care_type !== 'watering')) && (
+                    <div className="flex items-center justify-center gap-px flex-wrap max-w-full px-0.5 leading-none">
+                      {allEmojis.slice(0, 3).map(({ em, type }, i) => (
+                        <span
+                          key={`${em}-${i}`}
+                          className={`text-[10px] leading-none shrink-0 ${type === 'due' ? 'opacity-40' : ''}`}
+                          title={type === 'done' ? 'Watered' : 'Water due'}
+                        >
+                          {em}
+                        </span>
+                      ))}
+                      {allEmojis.length > 3 && (
+                        <span className="text-[8px] text-sage leading-none">+{allEmojis.length - 3}</span>
+                      )}
+                      {dayList.filter(r => r.care_type !== 'watering').slice(0, 2).map((r) => (
                         <span
                           key={r.id}
                           className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`}
                           title={`${r.plant_name ?? 'Plant'} — ${CARE_TYPE_LABELS[r.care_type]}`}
                         />
                       ))}
-                      {dayList.length > 3 && (
-                        <span className="text-[9px] text-sage leading-none">
-                          +{dayList.length - 3}
-                        </span>
-                      )}
                     </div>
                   )}
                 </button>
@@ -247,18 +289,33 @@ export default function CalendarPage() {
           </button>
         </div>
 
-        {sortedSelected.length === 0 ? (
+        {selectedWateredEvents.length > 0 && (
+          <div className="mb-3">
+            <p className="text-[10px] font-semibold text-bark-light uppercase tracking-wide mb-1.5">Watered on this day</p>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedWateredEvents.map((e) => (
+                <span key={e.id} className="inline-flex items-center gap-1 rounded-full bg-forest/8 px-2.5 py-1 text-[11px] font-medium text-forest">
+                  <span className="text-sm">{e.plant_emoji ?? '🌿'}</span>
+                  {e.plant_name ?? 'Plant'}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {sortedSelected.length === 0 && selectedWateredEvents.length === 0 ? (
           <div className="card border-dashed border-2 border-sage-muted bg-cream/80 text-center py-8">
             <Leaf className="w-10 h-10 text-sage mx-auto mb-2 opacity-80" />
             <p className="text-bark-light text-sm">
               No care tasks due this day.
             </p>
           </div>
-        ) : (
+        ) : sortedSelected.length > 0 ? (
           <ul className="space-y-2">
             {sortedSelected.map((r) => {
               const overdue = isOverdue(r.next_due);
               const label = CARE_TYPE_LABELS[r.care_type];
+              const icon = r.care_type === 'watering' ? (r.plant_emoji ?? '🌿') : careTypeIcon(r.care_type);
               return (
                 <li key={r.id}>
                   <div className="card-interactive flex items-start gap-3 p-4">
@@ -266,7 +323,7 @@ export default function CalendarPage() {
                       className="text-2xl leading-none mt-0.5"
                       aria-hidden
                     >
-                      {careTypeIcon(r.care_type)}
+                      {icon}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="font-display font-semibold text-bark truncate">
@@ -282,7 +339,7 @@ export default function CalendarPage() {
               );
             })}
           </ul>
-        )}
+        ) : null}
       </section>
 
       <div className="divider" />
@@ -314,7 +371,7 @@ export default function CalendarPage() {
                         key={r.id}
                         className="badge-sage text-[11px] inline-flex items-center gap-1"
                       >
-                        <span aria-hidden>{careTypeIcon(r.care_type)}</span>
+                        <span aria-hidden>{r.care_type === 'watering' ? (r.plant_emoji ?? '🌿') : careTypeIcon(r.care_type)}</span>
                         {r.plant_name ?? 'Plant'}
                       </span>
                     ))}
@@ -329,7 +386,7 @@ export default function CalendarPage() {
       <button
         type="button"
         className="btn-secondary w-full mt-6 text-sm py-2.5"
-        onClick={() => void refetch()}
+        onClick={() => { void refetch(); void refetchEvents(); }}
       >
         Refresh reminders
       </button>

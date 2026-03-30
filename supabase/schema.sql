@@ -43,6 +43,7 @@ create table if not exists plants (
   name text not null,
   species text,
   cultivar text,
+  emoji text default '🌿',
   photo_url text,
   acquisition_date date,
   location text,

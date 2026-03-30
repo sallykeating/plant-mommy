@@ -5,6 +5,7 @@ import { usePlant, usePlants } from '@/hooks/usePlants';
 import { PhotoUpload } from '@/components/shared/PhotoUpload';
 import { SpeciesSearchInput } from '@/components/shared/SpeciesSearchInput';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { EmojiPicker } from '@/components/shared/EmojiPicker';
 import { supabase } from '@/lib/supabase';
 import {
   HUMIDITY_LABELS,
@@ -14,6 +15,7 @@ import {
 } from '@/lib/types';
 import { getSpeciesDetails, type TrefleSpeciesListItem } from '@/lib/trefle';
 import { lookupCareProfile } from '@/lib/plant-care-data';
+import { fetchPlantImage } from '@/lib/plant-images';
 
 const SUNLIGHT_OPTIONS = Object.entries(SUNLIGHT_LABELS) as [SunlightLevel, string][];
 const HUMIDITY_OPTIONS = Object.entries(HUMIDITY_LABELS) as [HumidityLevel, string][];
@@ -44,6 +46,7 @@ export default function EditPlantPage() {
   const [deleting, setDeleting] = useState(false);
 
   const [name, setName] = useState('');
+  const [emoji, setEmoji] = useState('🌿');
   const [species, setSpecies] = useState('');
   const [cultivar, setCultivar] = useState('');
   const [acquisitionDate, setAcquisitionDate] = useState('');
@@ -60,6 +63,7 @@ export default function EditPlantPage() {
   useEffect(() => {
     if (!plant) return;
     setName(plant.name);
+    setEmoji(plant.emoji ?? '🌿');
     setSpecies(plant.species ?? '');
     setCultivar(plant.cultivar ?? '');
     setAcquisitionDate(plant.acquisition_date ?? '');
@@ -91,9 +95,27 @@ export default function EditPlantPage() {
 
   async function handleSpeciesSelect(item: TrefleSpeciesListItem) {
     const displayName = item.common_name ?? item.scientific_name;
+    const isLocal = item.id < 0;
     setSpecies(displayName);
+
     if (item.image_url && !pendingFile && !plant?.photo_url) {
       setApiImageUrl(item.image_url);
+    } else if (isLocal && !pendingFile && !plant?.photo_url) {
+      fetchPlantImage(displayName).then(url => {
+        if (url) setApiImageUrl(url);
+      });
+    }
+
+    if (isLocal) {
+      const profile = lookupCareProfile(displayName) ?? lookupCareProfile(item.scientific_name);
+      if (profile) {
+        if (!sunlightPreference) { setSunlightPreference(profile.light); if (!currentLight) setCurrentLight(profile.light); }
+        if (!wateringDays) setWateringDays(String(profile.wateringDays));
+        if (!fertilizingDays) setFertilizingDays(String(profile.fertilizingDays));
+        if (!humidity) setHumidity(profile.humidity);
+        setAutoFilled(true);
+      }
+      return;
     }
 
     const detail = await getSpeciesDetails(item.slug);
@@ -165,6 +187,7 @@ export default function EditPlantPage() {
       name: name.trim(),
       species: species.trim() || null,
       cultivar: cultivar.trim() || null,
+      emoji: emoji || '🌿',
       photo_url,
       acquisition_date: acquisitionDate || null,
       location: location.trim() || null,
@@ -242,17 +265,22 @@ export default function EditPlantPage() {
 
         <section className="card space-y-4">
           <h2 className="section-title">Basic info</h2>
-          <div>
-            <label className="label" htmlFor="edit-plant-name">
-              Name <span className="text-danger">*</span>
-            </label>
-            <input
-              id="edit-plant-name"
-              className="input-field"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+          <div className="flex items-start gap-4">
+            <div className="flex-1">
+              <label className="label" htmlFor="edit-plant-name">
+                Name <span className="text-danger">*</span>
+              </label>
+              <input
+                id="edit-plant-name"
+                className="input-field"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="pt-6">
+              <EmojiPicker value={emoji} onChange={setEmoji} />
+            </div>
           </div>
           <div>
             <label className="label" htmlFor="edit-species">

@@ -84,7 +84,7 @@ export function useCareReminders(plantId?: string) {
 
 export function useAllReminders() {
   const { user } = useAuth();
-  const [reminders, setReminders] = useState<(CareReminder & { plant_name?: string })[]>([]);
+  const [reminders, setReminders] = useState<(CareReminder & { plant_name?: string; plant_emoji?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
@@ -93,13 +93,13 @@ export function useAllReminders() {
 
     const { data: plants } = await supabase
       .from('plants')
-      .select('id, name')
+      .select('id, name, emoji')
       .eq('user_id', user.id);
 
     if (!plants) { setLoading(false); return; }
 
     const plantIds = plants.map(p => p.id);
-    const plantMap = new Map(plants.map(p => [p.id, p.name]));
+    const plantMap = new Map(plants.map(p => [p.id, { name: p.name as string, emoji: (p.emoji as string) ?? '🌿' }]));
 
     const { data, error } = await supabase
       .from('care_reminders')
@@ -109,7 +109,10 @@ export function useAllReminders() {
       .order('next_due');
 
     if (!error && data) {
-      setReminders(data.map(r => ({ ...r, plant_name: plantMap.get(r.plant_id) })));
+      setReminders(data.map(r => {
+        const info = plantMap.get(r.plant_id);
+        return { ...r, plant_name: info?.name, plant_emoji: info?.emoji };
+      }));
     }
     setLoading(false);
   }, [user]);
@@ -117,6 +120,47 @@ export function useAllReminders() {
   useEffect(() => { fetch(); }, [fetch]);
 
   return { reminders, loading, refetch: fetch };
+}
+
+export function useAllCareEvents() {
+  const { user } = useAuth();
+  const [events, setEvents] = useState<(CareEvent & { plant_name?: string; plant_emoji?: string })[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetch = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+
+    const { data: plants } = await supabase
+      .from('plants')
+      .select('id, name, emoji')
+      .eq('user_id', user.id);
+
+    if (!plants) { setLoading(false); return; }
+
+    const plantIds = plants.map(p => p.id);
+    const plantMap = new Map(plants.map(p => [p.id, { name: p.name as string, emoji: (p.emoji as string) ?? '🌿' }]));
+
+    const { data, error } = await supabase
+      .from('care_events')
+      .select('*')
+      .in('plant_id', plantIds)
+      .eq('care_type', 'watering')
+      .order('performed_at', { ascending: false })
+      .limit(200);
+
+    if (!error && data) {
+      setEvents(data.map(e => {
+        const info = plantMap.get(e.plant_id);
+        return { ...e, plant_name: info?.name, plant_emoji: info?.emoji };
+      }));
+    }
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  return { events, loading, refetch: fetch };
 }
 
 export function useCareEvents(plantId: string | undefined) {

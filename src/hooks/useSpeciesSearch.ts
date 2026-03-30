@@ -8,6 +8,7 @@ import {
   type CareTip,
 } from '@/lib/trefle';
 import { lookupCareProfile, searchLocalPlants } from '@/lib/plant-care-data';
+import { fetchPlantImage } from '@/lib/plant-images';
 import { SUNLIGHT_LABELS, HUMIDITY_LABELS } from '@/lib/types';
 
 function localToTrefleItem(name: string): TrefleSpeciesListItem {
@@ -53,15 +54,27 @@ export function useSpeciesSearch() {
         if (apiData.length > 0) {
           setResults(apiData.slice(0, 8));
         } else {
-          const localHits = searchLocalPlants(q);
-          setResults(localHits.map(h => localToTrefleItem(h.name)));
+          await setLocalResults(q);
         }
       } catch {
-        const localHits = searchLocalPlants(q);
-        setResults(localHits.map(h => localToTrefleItem(h.name)));
+        await setLocalResults(q);
       }
       setLoading(false);
     }, 400);
+
+    async function setLocalResults(query: string) {
+      const localHits = searchLocalPlants(query);
+      const items = localHits.map(h => localToTrefleItem(h.name));
+      setResults(items);
+
+      const withImages = await Promise.all(
+        items.map(async (item) => {
+          const url = await fetchPlantImage(item.common_name ?? item.scientific_name);
+          return url ? { ...item, image_url: url } : item;
+        }),
+      );
+      setResults(withImages);
+    }
   }, []);
 
   useEffect(() => {

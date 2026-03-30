@@ -17,6 +17,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api\/trefle/, '/api/v1'),
       },
+      '/api/plantnet': {
+        target: 'https://my-api.plantnet.org',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/plantnet/, ''),
+      },
     },
   },
 })

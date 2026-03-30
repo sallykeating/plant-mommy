@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ScanSearch } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { usePlants } from '@/hooks/usePlants';
 import { PhotoUpload } from '@/components/shared/PhotoUpload';
 import { SpeciesSearchInput } from '@/components/shared/SpeciesSearchInput';
+import { PlantIdentifyModal } from '@/components/plants/PlantIdentifyModal';
+import { EmojiPicker } from '@/components/shared/EmojiPicker';
 import { supabase } from '@/lib/supabase';
 import { addDays, todayISO } from '@/lib/helpers';
 import {
@@ -14,6 +17,8 @@ import {
 } from '@/lib/types';
 import { getSpeciesDetails, type TrefleSpeciesListItem } from '@/lib/trefle';
 import { lookupCareProfile } from '@/lib/plant-care-data';
+import { fetchPlantImage } from '@/lib/plant-images';
+import type { PlantNetResult } from '@/lib/plantnet';
 
 const SUNLIGHT_OPTIONS = Object.entries(SUNLIGHT_LABELS) as [SunlightLevel, string][];
 const HUMIDITY_OPTIONS = Object.entries(HUMIDITY_LABELS) as [HumidityLevel, string][];
@@ -37,8 +42,10 @@ export default function AddPlantPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [autoFilled, setAutoFilled] = useState(false);
+  const [identifyOpen, setIdentifyOpen] = useState(false);
 
   const [name, setName] = useState('');
+  const [emoji, setEmoji] = useState('🌿');
   const [species, setSpecies] = useState('');
   const [cultivar, setCultivar] = useState('');
   const [acquisitionDate, setAcquisitionDate] = useState('');
@@ -51,6 +58,7 @@ export default function AddPlantPage() {
   const [fertilizingDays, setFertilizingDays] = useState('');
   const [humidity, setHumidity] = useState<HumidityLevel | ''>('');
   const [notes, setNotes] = useState('');
+  const [lastWatered, setLastWatered] = useState('');
 
   function lightToSunlightLevel(light: number): SunlightLevel {
     if (light <= 2) return 'low_light';
@@ -67,9 +75,28 @@ export default function AddPlantPage() {
 
   async function handleSpeciesSelect(item: TrefleSpeciesListItem) {
     const displayName = item.common_name ?? item.scientific_name;
+    const isLocal = item.id < 0;
     setSpecies(displayName);
+
     if (item.image_url && !pendingFile) {
       setApiImageUrl(item.image_url);
+    } else if (isLocal && !pendingFile) {
+      fetchPlantImage(displayName).then(url => {
+        if (url) setApiImageUrl(url);
+      });
+    }
+
+    if (isLocal) {
+      const profile = lookupCareProfile(displayName) ?? lookupCareProfile(item.scientific_name);
+      if (profile) {
+        setSunlightPreference(profile.light);
+        setCurrentLight(profile.light);
+        setWateringDays(String(profile.wateringDays));
+        setFertilizingDays(String(profile.fertilizingDays));
+        setHumidity(profile.humidity);
+        setAutoFilled(true);
+      }
+      return;
     }
 
     const detail = await getSpeciesDetails(item.slug);
@@ -110,6 +137,31 @@ export default function AddPlantPage() {
     if (filled) setAutoFilled(true);
   }
 
+  function handleIdentifySelect(result: PlantNetResult, imageFile: File) {
+    const commonName = result.species.commonNames[0] ?? '';
+    const sciName = result.species.scientificNameWithoutAuthor;
+
+    if (commonName) setSpecies(commonName);
+    else setSpecies(sciName);
+
+    if (!name.trim() && commonName) {
+      setName(commonName);
+    }
+
+    setPendingFile(imageFile);
+    setApiImageUrl(null);
+
+    const profile = lookupCareProfile(commonName) ?? lookupCareProfile(sciName);
+    if (profile) {
+      setSunlightPreference(profile.light);
+      setCurrentLight(profile.light);
+      setWateringDays(String(profile.wateringDays));
+      setFertilizingDays(String(profile.fertilizingDays));
+      setHumidity(profile.humidity);
+      setAutoFilled(true);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg(null);
@@ -127,6 +179,7 @@ export default function AddPlantPage() {
       name: name.trim(),
       species: species.trim() || null,
       cultivar: cultivar.trim() || null,
+      emoji: emoji || '🌿',
       photo_url: null as string | null,
       acquisition_date: acquisitionDate || null,
       location: location.trim() || null,
@@ -159,14 +212,27 @@ export default function AddPlantPage() {
 
     const waterFreq = payload.watering_frequency_days;
     if (waterFreq != null && waterFreq > 0) {
+      const nextDue = lastWatered
+        ? addDays(lastWatered, waterFreq)
+        : addDays(todayISO(), waterFreq);
+
       await supabase.from('care_reminders').insert({
         plant_id: data.id,
         care_type: 'watering',
         frequency_days: waterFreq,
-        next_due: addDays(todayISO(), waterFreq),
+        next_due: nextDue,
+        last_completed: lastWatered ? new Date(lastWatered + 'T12:00:00').toISOString() : null,
         is_active: true,
         notes: null,
       });
+
+      if (lastWatered) {
+        await supabase.from('care_events').insert({
+          plant_id: data.id,
+          care_type: 'watering',
+          performed_at: new Date(lastWatered + 'T12:00:00').toISOString(),
+        });
+      }
     }
 
     setSubmitting(false);
@@ -177,6 +243,26 @@ export default function AddPlantPage() {
     <div className="page-container pb-32">
       <h1 className="page-title">New plant</h1>
       <p className="page-subtitle">Add a friend to your jungle.</p>
+
+      <button
+        type="button"
+        onClick={() => setIdentifyOpen(true)}
+        className="mb-6 w-full flex items-center gap-3 rounded-2xl bg-forest/5 border border-forest/15 px-4 py-3.5 text-left transition-all hover:bg-forest/10 hover:border-forest/25 active:scale-[0.99] lg:max-w-3xl"
+      >
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest">
+          <ScanSearch size={20} className="text-cream" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-forest">Identify from photo</p>
+          <p className="text-xs text-bark-light">Snap a photo and we'll tell you what plant it is</p>
+        </div>
+      </button>
+
+      <PlantIdentifyModal
+        open={identifyOpen}
+        onClose={() => setIdentifyOpen(false)}
+        onSelect={handleIdentifySelect}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-8 lg:max-w-3xl">
         <section className="card space-y-4">
@@ -193,19 +279,24 @@ export default function AddPlantPage() {
 
         <section className="card space-y-4">
           <h2 className="section-title">Basic info</h2>
-          <div>
-            <label className="label" htmlFor="plant-name">
-              Name <span className="text-danger">*</span>
-            </label>
-            <input
-              id="plant-name"
-              className="input-field"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              autoComplete="off"
-              placeholder="e.g. Fernicio"
-            />
+          <div className="flex items-start gap-4">
+            <div className="flex-1">
+              <label className="label" htmlFor="plant-name">
+                Name <span className="text-danger">*</span>
+              </label>
+              <input
+                id="plant-name"
+                className="input-field"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="off"
+                placeholder="e.g. Fernicio"
+              />
+            </div>
+            <div className="pt-6">
+              <EmojiPicker value={emoji} onChange={setEmoji} />
+            </div>
           </div>
           <div>
             <label className="label" htmlFor="species">
@@ -342,6 +433,24 @@ export default function AddPlantPage() {
               onChange={(e) => setWateringDays(e.target.value)}
               placeholder="e.g. 7"
             />
+          </div>
+          <div>
+            <label className="label" htmlFor="last-watered">
+              Last watered
+            </label>
+            <input
+              id="last-watered"
+              type="date"
+              className="input-field"
+              value={lastWatered}
+              onChange={(e) => setLastWatered(e.target.value)}
+              max={todayISO()}
+            />
+            {lastWatered && wateringDays && (
+              <p className="text-xs text-sage mt-1.5">
+                Next watering: {addDays(lastWatered, Number(wateringDays))}
+              </p>
+            )}
           </div>
           <div>
             <label className="label" htmlFor="fert-days">
