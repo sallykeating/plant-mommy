@@ -115,6 +115,11 @@ export function SpeciesSearchInput({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-forest">
                       {item.common_name ?? item.scientific_name}
+                      {item.id < 0 && (
+                        <span className="ml-1.5 inline-block rounded-full bg-sage/20 px-1.5 py-px text-[9px] font-medium text-sage align-middle">
+                          Built-in
+                        </span>
+                      )}
                     </p>
                     <p className="truncate text-xs text-sage">
                       {item.scientific_name}

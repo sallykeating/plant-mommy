@@ -7,8 +7,28 @@ import {
   type TrefleSpeciesDetail,
   type CareTip,
 } from '@/lib/trefle';
-import { lookupCareProfile } from '@/lib/plant-care-data';
+import { lookupCareProfile, searchLocalPlants } from '@/lib/plant-care-data';
 import { SUNLIGHT_LABELS, HUMIDITY_LABELS } from '@/lib/types';
+
+function localToTrefleItem(name: string): TrefleSpeciesListItem {
+  return {
+    id: -Math.abs(hashCode(name)),
+    common_name: name,
+    scientific_name: name,
+    slug: name.toLowerCase().replace(/\s+/g, '-'),
+    family: null,
+    family_common_name: null,
+    image_url: null,
+    genus: '',
+    links: { self: '', plant: '', genus: '' },
+  };
+}
+
+function hashCode(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return h;
+}
 
 export function useSpeciesSearch() {
   const [query, setQuery] = useState('');
@@ -29,10 +49,16 @@ export function useSpeciesSearch() {
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        const data = await searchSpecies(q);
-        setResults(data.slice(0, 8));
+        const apiData = await searchSpecies(q);
+        if (apiData.length > 0) {
+          setResults(apiData.slice(0, 8));
+        } else {
+          const localHits = searchLocalPlants(q);
+          setResults(localHits.map(h => localToTrefleItem(h.name)));
+        }
       } catch {
-        setResults([]);
+        const localHits = searchLocalPlants(q);
+        setResults(localHits.map(h => localToTrefleItem(h.name)));
       }
       setLoading(false);
     }, 400);
