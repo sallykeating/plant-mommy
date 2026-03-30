@@ -120,9 +120,7 @@ export async function getSpeciesDetails(slug: string): Promise<TrefleSpeciesDeta
   if (!token) return null;
 
   const url = `${API_BASE}/species/${encodeURIComponent(slug)}?token=${token}`;
-  console.log('Trefle: fetching species detail for', slug, url);
   const wrapper = await cachedFetch<{ data: TrefleSpeciesDetail }>(url);
-  console.log('Trefle: detail response', wrapper ? 'ok' : 'null', wrapper?.data?.growth);
   return wrapper?.data ?? null;
 }
 
